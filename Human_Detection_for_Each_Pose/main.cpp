@@ -19,7 +19,6 @@ using namespace std;
 struct svm_node *x;
 int max_nr_attr = 64;
 
-struct svm_model* CD;
 struct svm_model* Stand;
 struct svm_model* Squat;
 struct svm_model* Lie;
@@ -252,8 +251,9 @@ int main(int argc, char** argv) {
 	int hog_dim;
 
 	//検出器の取り込み
-	if ((CD = svm_load_model("C:/model_file/pre_model/CD_123.model")) == 0)exit(1);
-
+	if ((Stand = svm_load_model("C:/model_file/pre_model/Stand_64x128.model")) == 0)exit(1);
+	if ((Squat = svm_load_model("C:/model_file/pre_model/Squat_96x96.model")) == 0)exit(1);
+	if ((Lie = svm_load_model("C:/model_file/pre_model/Lie_128x64.model")) == 0)exit(1);
 
 	//テスト画像ファイル一覧メモ帳読み込み
 	char test_name[1024],result_name[1024];
@@ -325,36 +325,74 @@ int main(int argc, char** argv) {
 			cv::Mat img;			//検出矩形処理を施す画像
 			cvtColor(ans_img_CF, img, CV_RGB2GRAY);
 			cv::resize(img, img, cv::Size(), normalize_num[img_size] / img.rows, normalize_num[img_size] / img.rows, CV_INTER_LINEAR);
-			for (int y = 0; (y + 128) <= img.rows; y += 8) {
-				for (int x = 0; (x + 128) <= img.cols; x += 8) {
-					cv::Mat d_im(img, cv::Rect(x, y, 128, 128));
-					cv::resize(d_im, d_im, cv::Size(), 96.0/ d_im.cols, 96.0 / d_im.rows);
-
-					hog_dim = dimension(d_im.cols, d_im.rows);
-					float hog_vector[20000];						//各次元のHOGを格納
-					get_HOG(d_im, hog_vector);	//HOGの取得
-					double ans = predict(hog_vector, hog_dim, CD);	//尤度の算出
-					if (ans >= YUDO_CD) {//尤度から人物か非人物かの判断
-						cout << ans << endl;
-
-						detect[count].C_yudo = ans;
-						detect[count].C_x = x * 480 / normalize_num[img_size];
-						detect[count].C_y = y * 480 / normalize_num[img_size];
-						detect[count].C_width = 128 * 480 / normalize_num[img_size];
-						detect[count].C_height = 128 * 480 / normalize_num[img_size];
-						detect[count].ratio_num = img_size;
-						CD_img[count] = img.clone();
-						CD_img[count] = CD_img[count](cv::Rect(x, y, 128, 128));
-						check_img = draw_rectangle(check_img, detect[count].C_x, detect[count].C_y, detect[count].C_width, detect[count].C_height, 255, 0, 0);
-						count++;
+			for (int y = 0; (y + 64) <= img.rows; y += 8) {
+				for (int x = 0; (x + 64) <= img.cols; x += 8) {
+					//座位
+					if ((y + 128) <= img.rows && (x + 128) <= img.cols) {
+						cv::Mat d_im(img, cv::Rect(x, y, 128, 128));
+						cv::resize(d_im, d_im, cv::Size(), 96.0 / d_im.cols, 96.0 / d_im.rows);
+						hog_dim = dimension(d_im.cols, d_im.rows);
+						float hog_vector[20000];						//各次元のHOGを格納
+						get_HOG(d_im, hog_vector);	//HOGの取得
+						double ans = predict(hog_vector, hog_dim, Squat);	//尤度の算出
+						if (ans >= YUDO_CD) {//尤度から人物か非人物かの判断
+							detect[count].C_yudo = ans;
+							detect[count].C_x = x * 480 / normalize_num[img_size];
+							detect[count].C_y = y * 480 / normalize_num[img_size];
+							detect[count].C_width = 128 * 480 / normalize_num[img_size];
+							detect[count].C_height = 128 * 480 / normalize_num[img_size];
+							detect[count].ratio_num = img_size;
+							CD_img[count] = img.clone();
+							CD_img[count] = CD_img[count](cv::Rect(x, y, 128, 128));
+							check_img = draw_rectangle(check_img, detect[count].C_x, detect[count].C_y, detect[count].C_width, detect[count].C_height, 0, 255, 0);					
+							count++;
+						}
 					}
+					
+					//立位
+					if ((y + 128) <= img.rows) {
+						cv::Mat d_im(img, cv::Rect(x, y, 64, 128));
+						hog_dim = dimension(d_im.cols, d_im.rows);
+						float hog_vector[20000];						//各次元のHOGを格納
+						get_HOG(d_im, hog_vector);	//HOGの取得
+						double ans = predict(hog_vector, hog_dim, Stand);	//尤度の算出
+						if (ans >= YUDO_CD) {//尤度から人物か非人物かの判断
+							detect[count].C_yudo = ans;
+							detect[count].C_x = x * 480 / normalize_num[img_size];
+							detect[count].C_y = y * 480 / normalize_num[img_size];
+							detect[count].C_width = 64 * 480 / normalize_num[img_size];
+							detect[count].C_height = 128 * 480 / normalize_num[img_size];
+							detect[count].ratio_num = img_size;
+							CD_img[count] = img.clone();
+							CD_img[count] = CD_img[count](cv::Rect(x, y, 64, 128));
+							check_img = draw_rectangle(check_img, detect[count].C_x, detect[count].C_y, detect[count].C_width, detect[count].C_height, 0, 255, 0);
+							count++;
+						}
+					}
+					//臥位
+					if ((x + 128) <= img.cols) {
+						cv::Mat d_im(img, cv::Rect(x, y, 128, 64));
+						hog_dim = dimension(d_im.cols, d_im.rows);
+						float hog_vector[20000];						//各次元のHOGを格納
+						get_HOG(d_im, hog_vector);	//HOGの取得
+						double ans = predict(hog_vector, hog_dim, Lie);	//尤度の算出
+						if (ans >= YUDO_CD) {//尤度から人物か非人物かの判断
+							detect[count].C_yudo = ans;
+							detect[count].C_x = x * 480 / normalize_num[img_size];
+							detect[count].C_y = y * 480 / normalize_num[img_size];
+							detect[count].C_width = 128 * 480 / normalize_num[img_size];
+							detect[count].C_height = 64 * 480 / normalize_num[img_size];
+							detect[count].ratio_num = img_size;
+							CD_img[count] = img.clone();
+							CD_img[count] = CD_img[count](cv::Rect(x, y, 128, 64));
+							check_img = draw_rectangle(check_img, detect[count].C_x, detect[count].C_y, detect[count].C_width, detect[count].C_height, 0, 255, 0);
+							count++;
+						}
+					}
+
 				}
 			}
 		}
-	
-		cv::imshow("", check_img);
-		cvWaitKey(10);
-
 		//領域の統一
 		int t_num = 0;
 		for (int n = 0; detect[n].C_yudo != 0; n++) {
@@ -389,7 +427,7 @@ int main(int argc, char** argv) {
 			fprintf_s(result_data, ", %d, %d, %d, %d", detect[final_num].C_x, detect[final_num].C_y, detect[final_num].C_width, detect[final_num].C_height);
 
 			//矩形表示
-			ans_img_CF = draw_rectangle(ans_img_CF, detect[final_num].C_x, detect[final_num].C_y, detect[final_num].C_width, detect[final_num].C_height, 255, 0, 0);
+			ans_img_CF = draw_rectangle(ans_img_CF, detect[final_num].C_x, detect[final_num].C_y, detect[final_num].C_width, detect[final_num].C_height, 0, 255, 0);
 
 			for (int n = detect[final_num].C_y; n < detect[final_num].C_y+detect[final_num].C_height; n++) {
 				for (int m = detect[final_num].C_x; m < detect[final_num].C_x + detect[final_num].C_width; m++) {

@@ -259,3 +259,5 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+/Human_Detection_for_Each_Pose/test_list.txt
+/Human_Detection_for_Each_Pose/result_data.txt
