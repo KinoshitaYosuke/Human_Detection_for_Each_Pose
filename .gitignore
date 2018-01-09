@@ -261,3 +261,6 @@ __pycache__/
 *.pyc
 /Human_Detection_for_Each_Pose/test_list.txt
 /Human_Detection_for_Each_Pose/result_data.txt
+/Human_Detection_for_Each_Pose/2017_12_25
+/Human_Detection_for_Each_Pose/2017_12_29/result_data
+/Human_Detection_for_Each_Pose/2017_12_31/result_data
