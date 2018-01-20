@@ -252,13 +252,13 @@ int main(int argc, char** argv) {
 
 	//検出器の取り込み
 	if ((Stand = svm_load_model("C:/model_file/pre_model/Stand_64x128.model")) == 0)exit(1);
-	if ((Squat = svm_load_model("C:/model_file/pre_model/Squat_96x96.model")) == 0)exit(1);
+	if ((Squat = svm_load_model("C:/model_file/pre_model/Squat_128x128.model")) == 0)exit(1);
 	if ((Lie = svm_load_model("C:/model_file/pre_model/Lie_128x64.model")) == 0)exit(1);
 
 	//テスト画像ファイル一覧メモ帳読み込み
 	char test_name[1024], result_name[1024];
 	FILE *test_data, *result_data;
-	if (fopen_s(&test_data, "C:/photo/test_list.txt", "r") != 0) {
+	if (fopen_s(&test_data, "C:/photo/test_list_2.txt", "r") != 0) {
 		cout << "missing" << endl;
 		return 0;
 	}
@@ -305,13 +305,13 @@ int main(int argc, char** argv) {
 		//	cvWaitKey(0);
 
 			//Detect_Placeオブジェクトの作成
-		Detect_Place detect[300];
+		Detect_Place detect[2000];
 
 		//Coarse Detectorによる人物検出
 	//	cv::Mat CD_img[300];
 
 	//	int t_num[4] = { 0,0,0,0 };
-		float normalize_num[10] = { 128,192,256,320,-1 };
+		float normalize_num[10] = { 128, 160, 192, 224, 256, 288, 320,-1 };
 		//		float normalize_num[10] = { 96, 144, 192, 240, 288, 336,-1 };
 
 
@@ -321,14 +321,14 @@ int main(int argc, char** argv) {
 			cv::Mat img;			//検出矩形処理を施す画像
 			cvtColor(ans_img_CF, img, CV_RGB2GRAY);
 			cv::resize(img, img, cv::Size(), normalize_num[img_size] / img.rows, normalize_num[img_size] / img.rows, CV_INTER_LINEAR);
-			for (int y = 0; (y + 64) <= img.rows; y += 8) {
-				for (int x = 0; (x + 64) <= img.cols; x += 8) {
+			for (int y = 0; (y + 64) <= img.rows; y += 4) {
+				for (int x = 0; (x + 64) <= img.cols; x += 4) {
 					//座位
 					if ((y + 128) <= img.rows && (x + 128) <= img.cols) {
 						cv::Mat d_im(img, cv::Rect(x, y, 128, 128));
-						cv::resize(d_im, d_im, cv::Size(), 96.0 / d_im.cols, 96.0 / d_im.rows);
+					//	cv::resize(d_im, d_im, cv::Size(), 96.0 / d_im.cols, 96.0 / d_im.rows);
 						hog_dim = dimension(d_im.cols, d_im.rows);
-						float hog_vector[20000];						//各次元のHOGを格納
+						float hog_vector[50000];						//各次元のHOGを格納
 						get_HOG(d_im, hog_vector);	//HOGの取得
 						double ans = predict(hog_vector, hog_dim, Squat);	//尤度の算出
 						if (ans >= YUDO_CD) {//尤度から人物か非人物かの判断
@@ -338,7 +338,17 @@ int main(int argc, char** argv) {
 							detect[count].C_width = 128 * 480 / normalize_num[img_size];
 							detect[count].C_height = 128 * 480 / normalize_num[img_size];
 							detect[count].ratio_num = img_size;
-							//			check_img = draw_rectangle(check_img, detect[count].C_x, detect[count].C_y, detect[count].C_width, detect[count].C_height, 0, 255, 0);					
+							//			check_img = draw_rectangle(check_img, detect[count].C_x, detect[count].C_y, detect[count].C_width, detect[count].C_height, 0, 255, 0);			
+							fprintf_s(result_data, "%f", detect[count].C_yudo);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_x);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_y);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_width);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_height);
+							fprintf_s(result_data, "\n");
 							count++;
 						}
 					}
@@ -347,7 +357,7 @@ int main(int argc, char** argv) {
 					if ((y + 128) <= img.rows) {
 						cv::Mat d_im(img, cv::Rect(x, y, 64, 128));
 						hog_dim = dimension(d_im.cols, d_im.rows);
-						float hog_vector[20000];						//各次元のHOGを格納
+						float hog_vector[50000];						//各次元のHOGを格納
 						get_HOG(d_im, hog_vector);	//HOGの取得
 						double ans = predict(hog_vector, hog_dim, Stand);	//尤度の算出
 						if (ans >= YUDO_CD) {//尤度から人物か非人物かの判断
@@ -358,6 +368,16 @@ int main(int argc, char** argv) {
 							detect[count].C_height = 128 * 480 / normalize_num[img_size];
 							detect[count].ratio_num = img_size;
 							//			check_img = draw_rectangle(check_img, detect[count].C_x, detect[count].C_y, detect[count].C_width, detect[count].C_height, 0, 255, 0);
+							fprintf_s(result_data, "%f", detect[count].C_yudo);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_x);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_y);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_width);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_height);
+							fprintf_s(result_data, "\n");
 							count++;
 						}
 					}
@@ -365,7 +385,7 @@ int main(int argc, char** argv) {
 					if ((x + 128) <= img.cols) {
 						cv::Mat d_im(img, cv::Rect(x, y, 128, 64));
 						hog_dim = dimension(d_im.cols, d_im.rows);
-						float hog_vector[20000];						//各次元のHOGを格納
+						float hog_vector[50000];						//各次元のHOGを格納
 						get_HOG(d_im, hog_vector);	//HOGの取得
 						double ans = predict(hog_vector, hog_dim, Lie);	//尤度の算出
 						if (ans >= YUDO_CD) {//尤度から人物か非人物かの判断
@@ -376,6 +396,18 @@ int main(int argc, char** argv) {
 							detect[count].C_height = 64 * 480 / normalize_num[img_size];
 							detect[count].ratio_num = img_size;
 							//				check_img = draw_rectangle(check_img, detect[count].C_x, detect[count].C_y, detect[count].C_width, detect[count].C_height, 0, 255, 0);
+
+							fprintf_s(result_data, "%f", detect[count].C_yudo);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_x);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_y);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_width);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_height);
+							fprintf_s(result_data, "\n");
+
 							count++;
 						}
 					}
@@ -383,10 +415,11 @@ int main(int argc, char** argv) {
 				}
 			}
 		}
+		fclose(result_data);
 
 		//		cv::imshow("", check_img);
 		//		cvWaitKey(0);
-
+		/*
 				//領域の統一
 		int t_num = 0;
 		for (int n = 0; detect[n].C_yudo != 0; n++) {
@@ -397,13 +430,13 @@ int main(int argc, char** argv) {
 		//		t_num++;
 			}
 			for (int m = n + 1; detect[m].C_yudo != 0; m++) {
-				if ((detect[n].C_x + (float)detect[n].C_width / 2) - 50 <= (detect[m].C_x + (float)detect[m].C_width / 2)
+				if ((detect[n].C_x + (float)detect[n].C_width / 2) - 100 <= (detect[m].C_x + (float)detect[m].C_width / 2)
 					&&
-					(detect[m].C_x + (float)detect[m].C_width / 2) <= (detect[n].C_x + (float)detect[n].C_width / 2) + 50
+					(detect[m].C_x + (float)detect[m].C_width / 2) <= (detect[n].C_x + (float)detect[n].C_width / 2) + 100
 					&&
-					(detect[n].C_y + (float)detect[n].C_height / 2) - 50 <= (detect[m].C_y + (float)detect[m].C_height / 2)
+					(detect[n].C_y + (float)detect[n].C_height / 2) - 100 <= (detect[m].C_y + (float)detect[m].C_height / 2)
 					&&
-					(detect[m].C_y + (float)detect[m].C_height / 2) <= (detect[n].C_y + (float)detect[n].C_height / 2) + 50) {
+					(detect[m].C_y + (float)detect[m].C_height / 2) <= (detect[n].C_y + (float)detect[n].C_height / 2) + 100) {
 
 					detect[m].territory_num = detect[n].territory_num;
 				}
@@ -437,11 +470,11 @@ int main(int argc, char** argv) {
 				Det_Fin[n].territory_num = t_num;
 			}
 			for (int m = n + 1; Det_Fin[m].C_yudo != 0; m++) {
-				if ((Det_Fin[n].C_x + Det_Fin[n].C_width / 2) - 50 <= (Det_Fin[m].C_x + Det_Fin[m].C_width / 2)
-					&& (Det_Fin[m].C_x + Det_Fin[m].C_width / 2) <= (Det_Fin[n].C_x + Det_Fin[n].C_width / 2) + 50
+				if ((Det_Fin[n].C_x + Det_Fin[n].C_width / 2) - 100 <= (Det_Fin[m].C_x + Det_Fin[m].C_width / 2)
+					&& (Det_Fin[m].C_x + Det_Fin[m].C_width / 2) <= (Det_Fin[n].C_x + Det_Fin[n].C_width / 2) + 100
 					&&
-					(Det_Fin[n].C_y + Det_Fin[n].C_height / 2) - 50 <= (Det_Fin[m].C_y + Det_Fin[m].C_height / 2)
-					&& (Det_Fin[m].C_y + Det_Fin[m].C_height / 2) <= (Det_Fin[n].C_y + Det_Fin[n].C_height / 2) + 50) {
+					(Det_Fin[n].C_y + Det_Fin[n].C_height / 2) - 100 <= (Det_Fin[m].C_y + Det_Fin[m].C_height / 2)
+					&& (Det_Fin[m].C_y + Det_Fin[m].C_height / 2) <= (Det_Fin[n].C_y + Det_Fin[n].C_height / 2) + 100) {
 
 					Det_Fin[m].territory_num = Det_Fin[n].territory_num;
 				}
@@ -477,6 +510,7 @@ int main(int argc, char** argv) {
 		//	cvWaitKey(0);
 
 		fclose(result_data);
+		*/
 	}
 	fclose(test_data);
 	
