@@ -269,7 +269,7 @@ void ROC_data() {
 		strcat_s(test_path, new_test_name);
 
 		for (int i = 0; i < 1024; i++) {
-			if (new_test_name[i] == 'b') {
+			if (new_test_name[i] == 'b' && new_test_name[i+1]=='m') {
 				new_test_name[i] = 't';
 				new_test_name[i + 1] = 'x';
 				new_test_name[i + 2] = 't';
