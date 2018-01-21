@@ -252,7 +252,7 @@ void ROC_data() {
 	//テスト画像ファイル一覧メモ帳読み込み
 	char test_name[1024], result_name[1024];
 	FILE *test_data, *result_data;
-	if (fopen_s(&test_data, "c:/photo/predict-list.txt", "r") != 0) {
+	if (fopen_s(&test_data, "predict-list.txt", "r") != 0) {
 		cout << "missing" << endl;
 		return;
 	}
@@ -265,7 +265,7 @@ void ROC_data() {
 			new_test_name[i + 1] = '\0';
 		}
 
-		char test_path[1024] = "C:/photo/test_data_from_demo/predict/";
+		char test_path[1024] = "C:/photo/test_data_from_demo/predict_data/";
 		strcat_s(test_path, new_test_name);
 
 		for (int i = 0; i < 1024; i++) {
@@ -300,13 +300,13 @@ void ROC_data() {
 		double ans[3] = { 0,0,0 };
 
 		hog_dim = dimension(img.cols, img.rows);
-		float hog_vector[30000];
+		float hog_vector[50000];
 		get_HOG(img, hog_vector);
 		ans[0] = predict(hog_vector, hog_dim, Squat);
 
 		cv::Mat img_stand = img(cv::Rect(32, 0, 64, 128));
 		hog_dim = dimension(img_stand.cols, img_stand.rows);
-		for (int i = 0; i < 30000; i++) {
+		for (int i = 0; i < 50000; i++) {
 			hog_vector[i] = 0.0;
 		}
 		get_HOG(img_stand, hog_vector);
@@ -314,7 +314,7 @@ void ROC_data() {
 
 		cv::Mat img_lie = img(cv::Rect(0, 32, 128, 64));
 		hog_dim = dimension(img_lie.cols, img_lie.rows);
-		for (int i = 0; i < 30000; i++) {
+		for (int i = 0; i < 50000; i++) {
 			hog_vector[i] = 0.0;
 		}
 		get_HOG(img_lie, hog_vector);
@@ -638,5 +638,7 @@ void detect() {
 
 int main(int argc, char** argv) {
 	
+	ROC_data();
+
 	return 0;
 }
