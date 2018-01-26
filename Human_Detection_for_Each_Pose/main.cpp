@@ -252,7 +252,7 @@ void ROC_data() {
 	//テスト画像ファイル一覧メモ帳読み込み
 	char test_name[1024], result_name[1024];
 	FILE *test_data, *result_data;
-	if (fopen_s(&test_data, "predict-list.txt", "r") != 0) {
+	if (fopen_s(&test_data, "c:/photo/predict-nor-back.txt", "r") != 0) {
 		cout << "missing" << endl;
 		return;
 	}
@@ -265,7 +265,7 @@ void ROC_data() {
 			new_test_name[i + 1] = '\0';
 		}
 
-		char test_path[1024] = "C:/photo/test_data_from_demo/predict_data/";
+		char test_path[1024] = "C:/photo/test_data_from_demo/predict/normalize_data/";
 		strcat_s(test_path, new_test_name);
 
 		for (int i = 0; i < 1024; i++) {
