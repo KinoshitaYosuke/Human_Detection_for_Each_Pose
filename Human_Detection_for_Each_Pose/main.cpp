@@ -12,7 +12,7 @@
 #include <math.h>
 #include "svm.h"
 
-#define YUDO_CD 0.0
+#define YUDO_CD 0.5
 
 using namespace std;
 
@@ -245,14 +245,14 @@ void ROC_data() {
 	int file_num = 1;
 	int hog_dim;
 
-	if ((Stand = svm_load_model("C:/model_file/pre_model/Stand_64x128.model")) == 0)exit(1);
-	if ((Squat = svm_load_model("C:/model_file/pre_model/Squat_128x128.model")) == 0)exit(1);
-	if ((Lie = svm_load_model("C:/model_file/pre_model/Lie_128x64.model")) == 0)exit(1);
+	if ((Stand = svm_load_model("C:/model_file/pre_model/Stand_40x128.model")) == 0)exit(1);
+	if ((Squat = svm_load_model("C:/model_file/pre_model/Squat_72x128.model")) == 0)exit(1);
+	if ((Lie = svm_load_model("C:/model_file/pre_model/Lie_128x36.model")) == 0)exit(1);
 	
 	//テスト画像ファイル一覧メモ帳読み込み
 	char test_name[1024], result_name[1024];
 	FILE *test_data, *result_data;
-	if (fopen_s(&test_data, "c:/photo/predict-nor-back.txt", "r") != 0) {
+	if (fopen_s(&test_data, "c:/photo/predict-list-fin.txt", "r") != 0) {
 		cout << "missing" << endl;
 		return;
 	}
@@ -299,12 +299,13 @@ void ROC_data() {
 
 		double ans[3] = { 0,0,0 };
 
+		cv::Mat img_squat = img(cv::Rect(28, 0, 72, 128));
 		hog_dim = dimension(img.cols, img.rows);
 		float hog_vector[50000];
-		get_HOG(img, hog_vector);
+		get_HOG(img_squat, hog_vector);
 		ans[0] = predict(hog_vector, hog_dim, Squat);
 
-		cv::Mat img_stand = img(cv::Rect(32, 0, 64, 128));
+		cv::Mat img_stand = img(cv::Rect(44, 0, 40, 128));
 		hog_dim = dimension(img_stand.cols, img_stand.rows);
 		for (int i = 0; i < 50000; i++) {
 			hog_vector[i] = 0.0;
@@ -312,7 +313,7 @@ void ROC_data() {
 		get_HOG(img_stand, hog_vector);
 		ans[1] = predict(hog_vector, hog_dim, Stand);
 
-		cv::Mat img_lie = img(cv::Rect(0, 32, 128, 64));
+		cv::Mat img_lie = img(cv::Rect(0, 46, 128, 36));
 		hog_dim = dimension(img_lie.cols, img_lie.rows);
 		for (int i = 0; i < 50000; i++) {
 			hog_vector[i] = 0.0;
@@ -321,24 +322,24 @@ void ROC_data() {
 		ans[2] = predict(hog_vector, hog_dim, Lie);
 
 		float max = ans[0];
-		detect.C_x = 0;
+		detect.C_x = 28;
 		detect.C_y = 0;
-		detect.C_width = 128;
+		detect.C_width = 72;
 		detect.C_height = 128;
 
 		if (max < ans[1]) { 
 			max = ans[1]; 
-			detect.C_x = 32;
+			detect.C_x = 44;
 			detect.C_y = 0;
-			detect.C_width = 64;
+			detect.C_width = 40;
 			detect.C_height = 128;
 		}
 		if (max < ans[2]) {
 			max = ans[2];
 			detect.C_x = 0;
-			detect.C_y = 32;
+			detect.C_y = 46;
 			detect.C_width = 128;
-			detect.C_height = 64;
+			detect.C_height = 36;
 		}
 		detect.C_yudo = max;
 
@@ -361,7 +362,7 @@ void ROC_data() {
 	fclose(test_data);
 }
 
-void detect() {
+void detect_1() {
 	//変数宣言
 	//	int x, y;
 
@@ -636,9 +637,180 @@ void detect() {
 
 }
 
+void detect_2() {
+	//変数宣言
+	//	int x, y;
+
+	int file_num = 1;
+
+	int count = 0;
+	int hog_dim;
+
+	//検出器の取り込み
+	if ((Stand = svm_load_model("C:/model_file/pre_model/Stand_40x128.model")) == 0)exit(1);
+	if ((Squat = svm_load_model("C:/model_file/pre_model/Squat_72x128.model")) == 0)exit(1);
+	if ((Lie = svm_load_model("C:/model_file/pre_model/Lie_128x36.model")) == 0)exit(1);
+
+	//テスト画像ファイル一覧メモ帳読み込み
+	char test_name[1024], result_name[1024];
+	FILE *test_data, *result_data;
+	if (fopen_s(&test_data, "C:/photo/test_list_2.txt", "r") != 0) {
+		cout << "missing" << endl;
+		return;
+	}
+
+	while (fgets(test_name, 256, test_data) != NULL) {
+		string name_tes = test_name;
+		char new_test_name[1024];
+		for (int i = 0; i < name_tes.length() - 1; i++) {
+			new_test_name[i] = test_name[i];
+			new_test_name[i + 1] = '\0';
+		}
+		count = 0;
+
+		char test_path[1024] = "C:/photo/test_data_from_demo/test_data/";
+		strcat_s(test_path, new_test_name);
+
+		for (int i = 0; i < 1024; i++) {
+			if (new_test_name[i] == 'b') {
+				new_test_name[i] = 't';
+				new_test_name[i + 1] = 'x';
+				new_test_name[i + 2] = 't';
+				new_test_name[i + 3] = '\0';
+				break;
+			}
+			else new_test_name[i] = new_test_name[i];
+		}
+		char result_path[1024] = "result_data/";
+		strcat_s(result_path, new_test_name);
+
+		if (fopen_s(&result_data, result_path, "a") != 0) {
+			cout << "missing 2" << endl;
+			return;
+		}
+		//画像の取り込み
+		cv::Mat ans_img_CF = cv::imread(test_path, 1);	//検出する画像
+		cv::Mat check_img = ans_img_CF.clone();
+
+		cout << file_num << ":" << new_test_name << endl;
+		file_num++;
+
+		//	cv::imshow("", ans_img_CF);
+		//	cvWaitKey(0);
+
+		//Detect_Placeオブジェクトの作成
+		Detect_Place detect[2000];
+
+		float normalize_num[10] = { 128, 160, 192, 224, 256, 288, 320,-1 };
+		
+		for (int img_size = 0; normalize_num[img_size] != -1; img_size++) {
+			cv::Mat img;			//検出矩形処理を施す画像
+			cvtColor(ans_img_CF, img, CV_RGB2GRAY);
+			cv::resize(img, img, cv::Size(), normalize_num[img_size] / img.rows, normalize_num[img_size] / img.rows, CV_INTER_LINEAR);
+			for (int y = 0; (y + 36) <= img.rows; y += 4) {
+				for (int x = 0; (x + 40) <= img.cols; x += 4) {
+					//座位
+					if ((y + 128) <= img.rows && (x + 72) <= img.cols) {
+						cv::Mat d_im(img, cv::Rect(x, y, 72, 128));
+						//	cv::resize(d_im, d_im, cv::Size(), 96.0 / d_im.cols, 96.0 / d_im.rows);
+						hog_dim = dimension(d_im.cols, d_im.rows);
+						float hog_vector[50000];						//各次元のHOGを格納
+						get_HOG(d_im, hog_vector);	//HOGの取得
+						double ans = predict(hog_vector, hog_dim, Squat);	//尤度の算出
+						if (ans >= YUDO_CD) {//尤度から人物か非人物かの判断
+							detect[count].C_yudo = ans;
+							detect[count].C_x = x * 480 / normalize_num[img_size];
+							detect[count].C_y = y * 480 / normalize_num[img_size];
+							detect[count].C_width = 72 * 480 / normalize_num[img_size];
+							detect[count].C_height = 128 * 480 / normalize_num[img_size];
+							detect[count].ratio_num = img_size;
+							//			check_img = draw_rectangle(check_img, detect[count].C_x, detect[count].C_y, detect[count].C_width, detect[count].C_height, 0, 255, 0);			
+							fprintf_s(result_data, "%f", detect[count].C_yudo);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_x);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_y);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_width);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_height);
+							fprintf_s(result_data, "\n");
+							count++;
+						}
+					}
+
+					//立位
+					if ((y + 128) <= img.rows) {
+						cv::Mat d_im(img, cv::Rect(x, y, 40, 128));
+						hog_dim = dimension(d_im.cols, d_im.rows);
+						float hog_vector[50000];						//各次元のHOGを格納
+						get_HOG(d_im, hog_vector);	//HOGの取得
+						double ans = predict(hog_vector, hog_dim, Stand);	//尤度の算出
+						if (ans >= YUDO_CD) {//尤度から人物か非人物かの判断
+							detect[count].C_yudo = ans;
+							detect[count].C_x = x * 480 / normalize_num[img_size];
+							detect[count].C_y = y * 480 / normalize_num[img_size];
+							detect[count].C_width = 40 * 480 / normalize_num[img_size];
+							detect[count].C_height = 128 * 480 / normalize_num[img_size];
+							detect[count].ratio_num = img_size;
+							//			check_img = draw_rectangle(check_img, detect[count].C_x, detect[count].C_y, detect[count].C_width, detect[count].C_height, 0, 255, 0);
+							fprintf_s(result_data, "%f", detect[count].C_yudo);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_x);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_y);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_width);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_height);
+							fprintf_s(result_data, "\n");
+							count++;
+						}
+					}
+					//臥位
+					if ((x + 128) <= img.cols) {
+						cv::Mat d_im(img, cv::Rect(x, y, 128, 36));
+						hog_dim = dimension(d_im.cols, d_im.rows);
+						float hog_vector[50000];						//各次元のHOGを格納
+						get_HOG(d_im, hog_vector);	//HOGの取得
+						double ans = predict(hog_vector, hog_dim, Lie);	//尤度の算出
+						if (ans >= YUDO_CD) {//尤度から人物か非人物かの判断
+							detect[count].C_yudo = ans;
+							detect[count].C_x = x * 480 / normalize_num[img_size];
+							detect[count].C_y = y * 480 / normalize_num[img_size];
+							detect[count].C_width = 128 * 480 / normalize_num[img_size];
+							detect[count].C_height = 36 * 480 / normalize_num[img_size];
+							detect[count].ratio_num = img_size;
+							//				check_img = draw_rectangle(check_img, detect[count].C_x, detect[count].C_y, detect[count].C_width, detect[count].C_height, 0, 255, 0);
+
+							fprintf_s(result_data, "%f", detect[count].C_yudo);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_x);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_y);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_width);
+							fprintf_s(result_data, "\n");
+							fprintf_s(result_data, "%d", detect[count].C_height);
+							fprintf_s(result_data, "\n");
+
+							count++;
+						}
+					}
+
+				}
+			}
+		}
+		fclose(result_data);
+	}
+	fclose(test_data);
+
+}
+
+
 int main(int argc, char** argv) {
 	
-	ROC_data();
+	detect_2();
 
 	return 0;
 }
